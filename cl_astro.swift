@@ -1,7 +1,7 @@
 #!/usr/bin/env xcrun swift
 //requires Swift 2.0
 //-- parameter: name
-var argument = "date"
+var argument = "sun"
 if Process.arguments.count > 1 {
 	argument = Process.arguments[1]
 }
@@ -801,6 +801,73 @@ func next2FullMoonInRL() -> String {
 
 //print(next2FullMoonInRL())
 
+// Dayphase represent where in the day we are in relation to sunrise and sunset
+enum DayPhase {
+	case BeforeSunrise
+	case BeforeSunset
+	case AfterSunset
+}
+
+func dayPhase(dayOfYear: Int) -> DayPhase {
+	let daylight = findDaylight(dayOfYear)  // returns the number of minutes in the day
+	let now = clTime()                      // return a tuple with the year, doy, hr, min, sec
+	let nowMinutes = now.hour * 60 + now.min + (now.sec > 0 ? 1 : 0)
+	if nowMinutes < daylight.sunrise {
+		return .BeforeSunrise
+	} else if nowMinutes < daylight.sunset {
+		return .BeforeSunset
+	} else {
+		return .AfterSunset
+	}
+}
+	
+func nextSunEvent() -> String {
+	let now = clTime()                          // return a tuple with the year, doy, hr, min, sec
+	let dPhase = dayPhase(now.dayOfYear)        // return which part of the day we're in at the moment
+	let daylight = findDaylight(now.dayOfYear)  // returns the number of minutes in the day for sunrise and sunset
+	var timeZone = ""
+	if isDST() {
+		timeZone = "[IRL, EDT]"
+	} else {
+		timeZone = "[IRL, EST]"
+	}
+	// depending on which part of the day we're in, find Real Life time of next event (sunrise or sunset)
+	switch dPhase {
+	case .BeforeSunrise:
+		// the next event will be today's sunrise
+		let timeOfSunrise = convertMinutesToHoursMinutes(daylight.sunrise)
+		let hour = (timeOfSunrise.timeHalf == .am ? timeOfSunrise.hours : timeOfSunrise.hours + 12)
+		let event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunrise.minutes, sec: 0)
+		let americanTime = convertToAmPmTimeFormat(event.hour)
+		let fillerM = ( event.min < 10 ? "0" : "" )
+		return "Sunrise is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
+	case .BeforeSunset:
+		// the next event will be today's sunset
+		let timeOfSunset = convertMinutesToHoursMinutes(daylight.sunset)
+		let hour = (timeOfSunset.timeHalf == .am ? timeOfSunset.hours : timeOfSunset.hours + 12)
+		let event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunset.minutes, sec: 0)
+		let americanTime = convertToAmPmTimeFormat(event.hour)
+		let fillerM = ( event.min < 10 ? "0" : "" )
+		return "Sunset is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
+	case .AfterSunset:
+		// the next event will be tomorrow's (CL time) sunset
+		// add one day, making sure we handle if we're changing year
+		var day = now.dayOfYear + 1
+		var year = now.year
+		if day > 360 {
+			day = 1
+			year += 1
+		}
+		let daylightTomorrow = findDaylight(day)  // find sunrise tomorrow
+		let timeOfSunrise = convertMinutesToHoursMinutes(daylightTomorrow.sunrise)
+		let hour = (timeOfSunrise.timeHalf == .am ? timeOfSunrise.hours : timeOfSunrise.hours + 12)
+		let event = convertFromClTime(year, dayOfYear: day, hour: hour, min: timeOfSunrise.minutes, sec: 0)
+		let americanTime = convertToAmPmTimeFormat(event.hour)
+		let fillerM = ( event.min < 10 ? "0" : "" )
+		return "Sunrise (next) is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
+	}
+}
+
 var expension: String = "placeholder \(argument)"
 switch argument {
 	case "time":
@@ -815,6 +882,8 @@ switch argument {
     		expension = next2FullMoonInRL()
 	case "zodiac":
 		expension = clCurrentZodiac()
+	case "sun":
+		expension = nextSunEvent()
 	default:
 		expension = astroDataNow()
 }
