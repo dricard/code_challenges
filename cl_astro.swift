@@ -23,18 +23,18 @@ let seasonsNames = [ "Winter",  "Spring", "Summer", "Fall" ]
 
 // Each season is 360 / 4  days = 90 days
 
-enum amOrPm {
-	case am
-	case pm
+enum amOrPm: String {
+	case am = "am"
+	case pm = "pm"
 	
-	func simpleDescription() -> String {
-		switch self {
-			case .am:
-				return "am"
-			case .pm:
-				return "pm"
-		}
-	}
+//	func simpleDescription() -> String {
+//		switch self {
+//			case .am:
+//				return "am"
+//			case .pm:
+//				return "pm"
+//		}
+//	}
 }
 
 let gMoonPhaseText = [ " ", "a waxing crescent"
@@ -53,7 +53,11 @@ let gMoonPhaseText = [ " ", "a waxing crescent"
 	, "a waning crescent", "a waning crescent"
 ]
 
+// MARK: - REAL LIFE
+
 let daysInMonth = [ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]
+
+let monthName = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ]
 
 // MARK: - General constants
 
@@ -110,13 +114,31 @@ func convertMinutesToHoursMinutes(minutes: Int) -> (hours: Int, minutes: Int, ti
 //print(convertMinutesToHoursMinutes(905)) // expect (3, 5, cl_astro.amOrPm.pm)
 //print(convertMinutesToHoursMinutes(57)) // expect (0, 57, cl_astro.amOrPm.am)
 
+// This is to convert form 24H to AM/PM (more used by CL people)
+func convertToAmPmTimeFormat(hours: Int) -> (hour: Int, timeHalf: amOrPm) {
+	var hoursAmPmFormat = 0
+	var timeHalf: amOrPm = .am
+	if hours == 0 {
+		hoursAmPmFormat = 12
+	} else if hours >= 12 {
+		timeHalf = .pm
+		if hours >= 12 {
+			hoursAmPmFormat = hours - 12
+		} else {
+			hoursAmPmFormat = 12
+		}
+	} else {
+		hoursAmPmFormat = hours
+	}
+	return (hoursAmPmFormat, timeHalf)
+}
 
 /// This function is used to return a formated string with the time expressed
 /// in minutes. It uses convertMinutesToHoursMinutes
 func convertMinutesToHoursMinutesDescription(minutes: Int) -> String {
 	let time = convertMinutesToHoursMinutes(minutes)
 	let filler = time.minutes < 10 ? "0" : ""
-	return "\(time.hours):\(filler)\(time.minutes) \(time.timeHalf.simpleDescription())"
+	return "\(time.hours):\(filler)\(time.minutes)\(time.timeHalf)"
 }
 
 //print(convertMinutesToHoursMinutesDescription(157)) // expect 2:37 am
@@ -361,12 +383,13 @@ func astroData(year: Int, dayOfYear: Int) -> String {
 	var nextConst = const.constIndex + 1
 	if nextConst > 11 { nextConst -= 12 }
 	let nextZodiac = g_dayinzodiac - const.daysIntoZodiac
-	description += " The " + constellation_short[const.constIndex] + " rises with the Sun today. The " + constellation_short[nextConst] + " will rise in \(nextZodiac) day" + ( nextZodiac > 1 ? "s." : ".")
+	description += " The " + constellation_short[const.constIndex] + " rises with the Sun today; " + constellation_short[nextConst] + " will be next in \(nextZodiac) day" + ( nextZodiac > 1 ? "s." : ".")
 
 	return description
 }
 
 //print(astroData(605, dayOfYear: 147))
+
 /* expect: Today is Gradi, day 57 of Spring, 605. The sun rises at 4:06 am and sets at 7:54 pm. The Moon is in her 4th quarter (a waning quarter), it is day 23 of the moon. The next full moon will be in 19 days. The Fox rises with the Sun today. The Rooster will rise in 17 days.
 */
 
@@ -611,9 +634,17 @@ func astroDataNow() -> String {
 /// This returns a formated string with the current CL time (just the HH:MM:SS)
 func clTimeNow() -> String {
 	let time = clTime()
+// Convert to AM/PM
+	let americanTime = convertToAmPmTimeFormat(time.hour)
 	let fillerM = time.min < 10 ? "0" : ""
-	let fillerS = time.sec < 10 ? "0" : ""
-	return "It is \(time.hour):\(fillerM)\(time.min):\(fillerS)\(time.sec)."
+	return "It is \(americanTime.hour):\(fillerM)\(time.min)\(americanTime.timeHalf)"
+}
+
+/// This returns a formated string with the current CL time (just the HH:MM:SS)
+func clCurrentZodiac() -> String {
+	let time = clTime()
+	let const = constellationForDay(time.year, dayOfYear: time.dayOfYear)
+	return constellation_short[const.constIndex] + " rises with the Sun today."
 }
 
 //print(clTimeNow())
@@ -623,9 +654,10 @@ func clTimeNowFull() -> String {
 	let time = clTime()
 	let season = getSeason(time.dayOfYear)
 	let day = time.dayOfYear - season * 90
-		let fillerM = time.min < 10 ? "0" : ""
-		let fillerS = time.sec < 10 ? "0" : ""
-	return "It is \(time.hour):\(fillerM)\(time.min):\(fillerS)\(time.sec) on \(weekday_names[getDayOfWeek(time.year, dayOfYear: time.dayOfYear)]) day \(day) of \(seasonsNames[season]) \(time.year)."
+// Convert to AM/PM
+	let americanTime = convertToAmPmTimeFormat(time.hour)
+	let fillerM = time.min < 10 ? "0" : ""
+	return "It is \(americanTime.hour):\(fillerM)\(time.min)\(americanTime.timeHalf) on \(weekday_names[getDayOfWeek(time.year, dayOfYear: time.dayOfYear)]) day \(day) of \(seasonsNames[season]) \(time.year)."
 }
 
 //print(clTimeNowFull())
@@ -707,10 +739,20 @@ func nextFullMoonInRL() -> String {
 		dayEvent -= 360
 		year += 1
 	}
+	var timeZone = ""
+	if isDST() {
+		timeZone = "[EDT]"
+	} else {
+		timeZone = "[EDT]"
+	}
 	// default to finding noon on that day (used for full moon)
 	let event = convertFromClTime(year, dayOfYear: dayEvent, hour: 12, min: 0, sec: 0)
-	var eventString = "The next full moon (at noon) will be: "
-	eventString += "\(event.year)-\(event.month)-\(event.day) @ \(event.hour):\(event.min):\(event.sec)."
+	// Convert to AM/PM
+	let americanTime = convertToAmPmTimeFormat(event.hour)
+	let whichMonth = monthName[event.month - 1]
+	let fillerM = event.min < 10 ? "0" : ""
+	var eventString = "The next FMOCR will be "
+	eventString += "\(whichMonth) \(event.day) at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf). " + timeZone
 	return eventString
 }
 
@@ -726,10 +768,20 @@ func next2FullMoonInRL() -> String {
 		dayEvent -= 360
 		year += 1
 	}
+	var timeZone = ""
+	if isDST() {
+		timeZone = "[EDT]"
+	} else {
+		timeZone = "[EST]"
+	}
 	// default to finding noon on that day (used for full moon)
 	var event = convertFromClTime(year, dayOfYear: dayEvent, hour: 12, min: 0, sec: 0)
-	var eventString = "The next full moon (at noon) will be: "
-	eventString += "\(event.year)-\(event.month)-\(event.day) @ \(event.hour):\(event.min):\(event.sec),"
+	var americanTime = convertToAmPmTimeFormat(event.hour)
+	var whichMonth = monthName[event.month - 1]
+	var fillerM = event.min < 10 ? "0" : ""
+	var eventString = "The next FMOCR will be "
+	eventString += "\(whichMonth) \(event.day) at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf),"
+//	eventString += "\(event.year)-\(event.month)-\(event.day) @ \(americanTime.hour):\(event.min):\(event.sec) \(americanTime.timeHalf),"
 	// Now get the second next full moon which happens 28 days later
 	dayEvent += 28
 	if dayEvent > 360 {
@@ -738,8 +790,11 @@ func next2FullMoonInRL() -> String {
 	}
 	// default to finding noon on that day (used for full moon)
 	event = convertFromClTime(year, dayOfYear: dayEvent, hour: 12, min: 0, sec: 0)
-	eventString += " and the following will be: "
-	eventString += "\(event.year)-\(event.month)-\(event.day) @ \(event.hour):\(event.min):\(event.sec)."
+	americanTime = convertToAmPmTimeFormat(event.hour)
+	whichMonth = monthName[event.month - 1]
+	fillerM = event.min < 10 ? "0" : ""
+	eventString += " and the following will be "
+	eventString += "\(whichMonth) \(event.day) at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf). " + timeZone 
 
 	return eventString
 }
@@ -758,6 +813,8 @@ switch argument {
     		expension = nextFullMoonInRL()
     case "2moon":
     		expension = next2FullMoonInRL()
+	case "zodiac":
+		expension = clCurrentZodiac()
 	default:
 		expension = astroDataNow()
 }
