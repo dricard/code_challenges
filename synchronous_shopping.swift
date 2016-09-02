@@ -1,16 +1,70 @@
 // synchronous shopping
 
+// create the edge class
+
+class Road {
+	var neighbor: ShoppingCenter
+	var time: Int
+	
+	init() {
+		time = 0
+		self.neighbor = ShoppingCenter()
+	}
+}
+
+// create the vertex class
 class ShoppingCenter {
 	var id: Int
 	var fishes: [Int]
-	var roads: [(Int, Int)] // (roadTo, time)
+	var roads: [Road]
 	
-	init(id: Int, fishes: [Int], roads: [(Int, Int)]) {
+	init(id: Int) {
 		self.id = id
-		self.fishes = fishes
-		self.roads = roads
+		self.fishes = [Int]()
+		self.roads = [Road]()
 	}
 }
+
+// create the canvas class to hold the vertices data
+class City {
+	var cityMap: [ShoppingCenter]
+	var isDirected: Bool
+	
+	init() {
+		cityMap = [ShoppingCenter]()
+		isDirected = false  // in this case roads are two-way, not one-way
+	}
+	
+	func addShoppingCenter(key: Int, goods: [Int]) -> ShoppingCenter {
+		
+		let newShoppingCenter: ShoppingCenter = ShoppingCenter(key)
+		cityMap.append(newShoppingCenter)
+		
+		return newShoppingCenter
+	}
+	
+	func addRoad(source: ShoppingCenter, neighbor: ShoppingCenter, time: Int) {
+		
+		let newRoad = Road()
+		
+		newRoad.neighbor = neighbor
+		newRoad.time = time
+		source.roads.append(newRoad)
+		
+		// if not isDirected than roads are two-way
+		if !isDirected {
+			
+			// create the reverse connection
+			let reverseRoad = Road()
+			
+			reverseRoad.neighbor = source
+			reverseRoad.time = time
+			
+			neighbor.roads.append(reverseRoad)
+		}
+	}
+}
+
 
 // MARK: - INPUTS
 
