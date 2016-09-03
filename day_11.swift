@@ -34,7 +34,7 @@ func sumHourGlass(i: Int, j: Int) -> Int {
 // Now we scan the matrix for hourglasses. There are 16 in total.
 // we scan from the 'a' element in the hourglass.
 
-// values are -9 <= A[i][j] <= 9
+// values are -9 <= A[i][j] <= 9 so the minimum possible sum is -63 (7 x -9)
 var maxSum = -64
 
 for i in 0...3 {

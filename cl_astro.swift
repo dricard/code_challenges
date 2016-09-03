@@ -822,8 +822,8 @@ func dayPhase(dayOfYear: Int) -> DayPhase {
 }
 	
 func nextSunEvent() -> String {
-	let now = clTime()                          // return a tuple with the year, doy, hr, min, sec
-	let dPhase = dayPhase(now.dayOfYear)        // return which part of the day we're in at the moment
+	let now = clTime()                          // returns a tuple with the year, doy, hr, min, sec
+	let dPhase = dayPhase(now.dayOfYear)        // returns which part of the day we're in at the moment
 	let daylight = findDaylight(now.dayOfYear)  // returns the number of minutes in the day for sunrise and sunset
 	var timeZone = ""
 	if isDST() {
@@ -836,21 +836,29 @@ func nextSunEvent() -> String {
 	case .BeforeSunrise:
 		// the next event will be today's sunrise
 		let timeOfSunrise = convertMinutesToHoursMinutes(daylight.sunrise)
-		let hour = (timeOfSunrise.timeHalf == .am ? timeOfSunrise.hours : timeOfSunrise.hours + 12)
-		let event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunrise.minutes, sec: 0)
-		let americanTime = convertToAmPmTimeFormat(event.hour)
-		let fillerM = ( event.min < 10 ? "0" : "" )
-		return "Sunrise is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
+		var hour = (timeOfSunrise.timeHalf == .am ? timeOfSunrise.hours : timeOfSunrise.hours + 12)
+		var event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunrise.minutes, sec: 0)
+		var americanTime = convertToAmPmTimeFormat(event.hour)
+		var fillerM = ( event.min < 10 ? "0" : "" )
+		let message = "Sunrise is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf)"
+		// Now following event will be today's sunset
+		let timeOfSunset = convertMinutesToHoursMinutes(daylight.sunset)
+		hour = (timeOfSunset.timeHalf == .am ? timeOfSunset.hours : timeOfSunset.hours + 12)
+		event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunset.minutes, sec: 0)
+		americanTime = convertToAmPmTimeFormat(event.hour)
+		fillerM = ( event.min < 10 ? "0" : "" )
+		return message + " and sunset is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
+
 	case .BeforeSunset:
 		// the next event will be today's sunset
 		let timeOfSunset = convertMinutesToHoursMinutes(daylight.sunset)
-		let hour = (timeOfSunset.timeHalf == .am ? timeOfSunset.hours : timeOfSunset.hours + 12)
-		let event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunset.minutes, sec: 0)
-		let americanTime = convertToAmPmTimeFormat(event.hour)
-		let fillerM = ( event.min < 10 ? "0" : "" )
-		return "Sunset is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
-	case .AfterSunset:
-		// the next event will be tomorrow's (CL time) sunset
+		var hour = (timeOfSunset.timeHalf == .am ? timeOfSunset.hours : timeOfSunset.hours + 12)
+		var event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunset.minutes, sec: 0)
+		var americanTime = convertToAmPmTimeFormat(event.hour)
+		var fillerM = ( event.min < 10 ? "0" : "" )
+		let message = "Sunset is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf)"
+
+		// the following event will be tomorrow's (CL time) sunrise
 		// add one day, making sure we handle if we're changing year
 		var day = now.dayOfYear + 1
 		var year = now.year
@@ -860,11 +868,35 @@ func nextSunEvent() -> String {
 		}
 		let daylightTomorrow = findDaylight(day)  // find sunrise tomorrow
 		let timeOfSunrise = convertMinutesToHoursMinutes(daylightTomorrow.sunrise)
-		let hour = (timeOfSunrise.timeHalf == .am ? timeOfSunrise.hours : timeOfSunrise.hours + 12)
-		let event = convertFromClTime(year, dayOfYear: day, hour: hour, min: timeOfSunrise.minutes, sec: 0)
-		let americanTime = convertToAmPmTimeFormat(event.hour)
-		let fillerM = ( event.min < 10 ? "0" : "" )
-		return "Sunrise (next) is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
+		hour = (timeOfSunrise.timeHalf == .am ? timeOfSunrise.hours : timeOfSunrise.hours + 12)
+		event = convertFromClTime(year, dayOfYear: day, hour: hour, min: timeOfSunrise.minutes, sec: 0)
+		americanTime = convertToAmPmTimeFormat(event.hour)
+		fillerM = ( event.min < 10 ? "0" : "" )
+		return message + " and sunrise (tomorrow) is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
+	case .AfterSunset:
+		// the next event will be tomorrow's (CL time) sunrise
+		// add one day, making sure we handle if we're changing year
+		var day = now.dayOfYear + 1
+		var year = now.year
+		if day > 360 {
+			day = 1
+			year += 1
+		}
+		let daylightTomorrow = findDaylight(day)  // find sunrise tomorrow
+		let timeOfSunrise = convertMinutesToHoursMinutes(daylightTomorrow.sunrise)
+		var hour = (timeOfSunrise.timeHalf == .am ? timeOfSunrise.hours : timeOfSunrise.hours + 12)
+		var event = convertFromClTime(year, dayOfYear: day, hour: hour, min: timeOfSunrise.minutes, sec: 0)
+		var americanTime = convertToAmPmTimeFormat(event.hour)
+		var fillerM = ( event.min < 10 ? "0" : "" )
+		let message = "Sunrise (tomorrow) is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf)"
+
+		// the following event will be tomorrows's sunset
+		let timeOfSunset = convertMinutesToHoursMinutes(daylightTomorrow.sunset)
+		hour = (timeOfSunset.timeHalf == .am ? timeOfSunset.hours : timeOfSunset.hours + 12)
+		event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunset.minutes, sec: 0)
+		americanTime = convertToAmPmTimeFormat(event.hour)
+		fillerM = ( event.min < 10 ? "0" : "" )
+		return message + " and sunset is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
 	}
 }
 
