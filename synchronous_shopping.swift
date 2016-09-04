@@ -1,6 +1,6 @@
 // synchronous shopping
 
-// create the edge class
+// the edge class
 
 class Road {
 	var neighbor: ShoppingCenter
@@ -12,7 +12,8 @@ class Road {
 	}
 }
 
-// create the vertex class
+// the vertex class
+
 class ShoppingCenter {
 	var id: Int
 	var fishes: [Int]
@@ -25,20 +26,32 @@ class ShoppingCenter {
 	}
 }
 
+// the path class maintains objects that comprise the frontier
+
+class Path {
+	var total: Int!
+	var destination: ShoppingCenter
+	var previous: Path!
+	
+	init() {
+		destination = ShoppingCenter()
+	}
+}
+
 // create the canvas class to hold the vertices data
 class City {
-	var cityMap: [ShoppingCenter]
+	var center: [ShoppingCenter]
 	var isDirected: Bool
 	
 	init() {
-		cityMap = [ShoppingCenter]()
+		center = [ShoppingCenter]()
 		isDirected = false  // in this case roads are two-way, not one-way
 	}
 	
-	func addShoppingCenter(key: Int, goods: [Int]) -> ShoppingCenter {
+	func addShoppingCenter(key: Int) -> ShoppingCenter {
 		
 		let newShoppingCenter: ShoppingCenter = ShoppingCenter(key)
-		cityMap.append(newShoppingCenter)
+		center.append(newShoppingCenter)
 		
 		return newShoppingCenter
 	}
@@ -68,6 +81,9 @@ class City {
 
 // MARK: - INPUTS
 
+// The first line returns the number of vertices (shopping centers), 
+// the number of edges (roads) and the number of fishes
+
 let params = readLine()!.characters.split(" ").map{ Int( String( $0 ) )! }
 
 let numberOfShopingCenters = params[0]
@@ -76,46 +92,39 @@ let numberOfRoads = params[1]
 
 let numberOfFishes = params[2]
 
-var fishByShopingCenter = [[Int]]()
+// Now we create our city object which will hold the shopping centers and roads
+// information which we'll add as we read the data
 
-var roadsInformation = [[(Int, Int)]]() // an array (1...numberOfShoppingCenter) of (roadTo, time) tuples
+var city = City()
 
-var center = [ShoppingCenter]()
-
-// Read fishes sold information
+// add the number of shopping centers to our city
+//  and read fishes sold at each shopping center information
 
 for i in 1...numberOfShopingCenters {
 	
+	// create a shopping center object
+	city.addShoppingCenter(i)
+
 	// get the number of fishes sold here and the list of fishes
 	var shopingCenterInfo = readLine()!.characters.split(" ").map{ Int(String($0))! }
-	// remove the number of fishes, keep only the list of fishes sold
+	// remove the number of fishes (1st number), keep only the list of fishes sold
 	let numOfFishesHere = shopingCenterInfo.removeAtIndex(0)
 	// add this to an array so we'll be able to build our shoppingCenter object
-	fishByShopingCenter.append(shopingCenterInfo)
-	// Create the array of roads information for that shopping center
-	roadsInformation.append([(Int, Int)]())
+	city.center[i].fishes = shopingCenterInfo
+
 }
 
 print("number of roads = \(numberOfRoads)")
+
 // read roads information
 
 for i in 1...numberOfRoads {
 	print("i = \(i)")
 	// get the road information (shopping center, shopping center, time)
 	let roadsInfo = readLine()!.characters.split(" ").map{ Int(String($0))! }
-	// add the tuple to the roadsInformation array for the first shopping center
-	roadsInformation[roadsInfo[0]].append((roadsInfo[1], roadsInfo[2]))
-	// and the reciprocal for the second
-	roadsInformation[roadsInfo[1]].append((roadsInfo[0], roadsInfo[2]))
-
-}
-
-// Now build the shopping centers objects
-
-for i in 1...numberOfShopingCenters {
-	
-	center[i] = ShoppingCenter(id: i, fishes: fishByShopingCenter[i], roads: roadsInformation[i])
-	
+	// add the the road to our city. This creates the road for both shopping
+	// centers since it's not a directed graph
+	city.addRoad(city.center[roadsInfo[0]], neighbor: city.center[roadsInfo[1]], time: city.center[roadsInfo[2]])
 }
 
 print(center)

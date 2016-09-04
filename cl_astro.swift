@@ -888,12 +888,12 @@ func nextSunEvent() -> String {
 		var event = convertFromClTime(year, dayOfYear: day, hour: hour, min: timeOfSunrise.minutes, sec: 0)
 		var americanTime = convertToAmPmTimeFormat(event.hour)
 		var fillerM = ( event.min < 10 ? "0" : "" )
-		let message = "Sunrise (tomorrow) is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf)"
+		let message = "Sunrise (next) is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf)"
 
 		// the following event will be tomorrows's sunset
 		let timeOfSunset = convertMinutesToHoursMinutes(daylightTomorrow.sunset)
 		hour = (timeOfSunset.timeHalf == .am ? timeOfSunset.hours : timeOfSunset.hours + 12)
-		event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunset.minutes, sec: 0)
+		event = convertFromClTime(year, dayOfYear: day, hour: hour, min: timeOfSunset.minutes, sec: 0)
 		americanTime = convertToAmPmTimeFormat(event.hour)
 		fillerM = ( event.min < 10 ? "0" : "" )
 		return message + " and sunset is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
