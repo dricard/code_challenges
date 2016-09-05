@@ -1,7 +1,7 @@
 #!/usr/bin/env xcrun swift
 //requires Swift 2.0
 //-- parameter: name
-var argument = "sun"
+var argument = "time"
 if Process.arguments.count > 1 {
 	argument = Process.arguments[1]
 }
@@ -900,6 +900,111 @@ func nextSunEvent() -> String {
 	}
 }
 
+var step = [[Int]]()
+
+var steps = [Int]()
+
+// Human/undisclosed series
+
+steps = [ 0, 7, 4, 6, 1, 7, 2, 11, 8, 6, 5, 11 ]
+step.append(steps)
+
+// dwarf series
+
+steps = [ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+step.append(steps)
+
+// thoom series
+
+steps = [ 0, 9, 5, 5, 9, 1, 1, 9, 8, 9, 5, 9 ]
+step.append(steps)
+
+// zo series
+
+steps = [ 0, 4, 1, 9, 1, 4, 11, 4, 3, 10, 9, 1 ]
+step.append(steps)
+
+// fen series
+
+steps = [ 0, 5, 8, 8, 11, 6, 9, 5, 3, 8, 3, 4 ]
+step.append(steps)
+
+// sylvan series
+
+steps = [ 0, 11, 10, 8, 5, 9, 6, 1, 2, 4, 7, 3 ]
+step.append(steps)
+
+// halfling series
+
+steps = [ 0, 8, 11, 11, 9, 10, 4, 5, 4, 9, 10, 7 ]
+step.append(steps)
+
+// starting zodiac sign (negative) offset by race
+// races are: human, dwarf, thoom, zo, fen, sylvan, halfling
+
+let start = [ 11, 11, 10, 7, 1, 0, 7 ] 
+
+// This makes sure that a zodiac sign index is in the 0...11 range
+// this assumes (as is the case in this maze solution) that the
+// maximum added to an index is 11
+func normaliseZodiacIndex(index: Int) -> Int {
+	var nIndex = 0
+	if index < 0 {
+		nIndex = 12 + index
+	} else if index > 11 {
+		nIndex = index - 12
+	} else {
+		nIndex = index
+	}
+	return nIndex
+}
+
+// Melabrion's Zodiac maze has the following solution:
+// Each of the 7 races has a different starting zodiac sign which depends on
+// the current rising zodiac. Once this starting sign is found, each race
+// steps through the other 11 signs in steps (dwarves do it in the normal sequence
+// of rising zodiacs, other have more complicated steps patterns)
+func sayMZMPath(race: String) -> String {
+	let time = clTime()
+	let const = constellationForDay(time.year, dayOfYear: time.dayOfYear).constIndex
+	var raceIndex = 0 // default to human
+	switch race {
+		case "human":
+			raceIndex = 0
+		case "dwarf":
+			raceIndex = 1
+		case "thoom":
+			raceIndex = 2
+		case "zo":
+			raceIndex = 3
+		case "fen":
+			raceIndex = 4
+		case "sylvan":
+			raceIndex = 5
+		case "halfling":
+			raceIndex = 6
+		default: // all other races introduced after defaults to human sequence
+			raceIndex = 0
+	}
+	var path = [Int]()
+	// get the starting zodiac sign for that race's path
+	path.append(normaliseZodiacIndex(const - start[raceIndex])) 
+	// now complete the path
+	for i in 1...11 {
+		path.append(normaliseZodiacIndex(path[i-1] + step[raceIndex][i]))
+	}
+	var pathString = "Path for \(race) is: "
+	for i in 0...11 {
+		pathString += constellation_short[path[i]]
+		if i < 11 {
+			pathString += ", "
+		} else {
+			pathString += "."
+		}
+	}
+	return pathString
+}
+
 var expension: String = "placeholder \(argument)"
 switch argument {
 	case "time":
@@ -916,6 +1021,20 @@ switch argument {
 		expension = clCurrentZodiac()
 	case "sun":
 		expension = nextSunEvent()
+	case "mzm_human":
+		expension = sayMZMPath("human")
+	case "mzm_dwarf":
+		expension = sayMZMPath("dwarf")
+	case "mzm_thoom":
+		expension = sayMZMPath("thoom")
+	case "mzm_zo":
+		expension = sayMZMPath("zo")
+	case "mzm_fen":
+		expension = sayMZMPath("fen")
+	case "mzm_sylvan":
+		expension = sayMZMPath("sylvan")
+	case "mzm_halfling":
+		expension = sayMZMPath("halfling")
 	default:
 		expension = astroDataNow()
 }

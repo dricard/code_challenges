@@ -1,17 +1,5 @@
 // synchronous shopping
 
-// the edge class
-
-class Road {
-	var neighbor: ShoppingCenter
-	var time: Int
-	
-	init() {
-		time = 0
-		self.neighbor = ShoppingCenter()
-	}
-}
-
 // the vertex class
 
 class ShoppingCenter {
@@ -26,6 +14,19 @@ class ShoppingCenter {
 	}
 }
 
+// the edge class
+
+class Road {
+	var neighbor: ShoppingCenter
+	var time: Int
+	
+	init() {
+		time = 0
+		self.neighbor = ShoppingCenter(id: 0)
+	}
+}
+
+
 // the path class maintains objects that comprise the frontier
 
 class Path {
@@ -34,7 +35,7 @@ class Path {
 	var previous: Path!
 	
 	init() {
-		destination = ShoppingCenter()
+		destination = ShoppingCenter(id: 0)
 	}
 }
 
@@ -50,7 +51,7 @@ class City {
 	
 	func addShoppingCenter(key: Int) -> ShoppingCenter {
 		
-		let newShoppingCenter: ShoppingCenter = ShoppingCenter(key)
+		let newShoppingCenter: ShoppingCenter = ShoppingCenter(id: key)
 		center.append(newShoppingCenter)
 		
 		return newShoppingCenter
@@ -110,7 +111,7 @@ for i in 1...numberOfShopingCenters {
 	// remove the number of fishes (1st number), keep only the list of fishes sold
 	let numOfFishesHere = shopingCenterInfo.removeAtIndex(0)
 	// add this to an array so we'll be able to build our shoppingCenter object
-	city.center[i].fishes = shopingCenterInfo
+	city.center[i-1].fishes = shopingCenterInfo
 
 }
 
@@ -124,7 +125,11 @@ for i in 1...numberOfRoads {
 	let roadsInfo = readLine()!.characters.split(" ").map{ Int(String($0))! }
 	// add the the road to our city. This creates the road for both shopping
 	// centers since it's not a directed graph
-	city.addRoad(city.center[roadsInfo[0]], neighbor: city.center[roadsInfo[1]], time: city.center[roadsInfo[2]])
+	city.addRoad(city.center[roadsInfo[0]-1], neighbor: city.center[roadsInfo[1]-1], time: roadsInfo[2])
 }
 
-print(center)
+// Implement DIJKSTRA algorithm
+
+func findMinimumTime(source: ShoppingCenter, destination: ShoppingCenter) -> Path? {
+	
+}
