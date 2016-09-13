@@ -122,7 +122,7 @@ func convertToAmPmTimeFormat(hours: Int) -> (hour: Int, timeHalf: amOrPm) {
 		hoursAmPmFormat = 12
 	} else if hours >= 12 {
 		timeHalf = .pm
-		if hours >= 12 {
+		if hours > 12 {
 			hoursAmPmFormat = hours - 12
 		} else {
 			hoursAmPmFormat = 12
