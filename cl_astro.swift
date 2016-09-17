@@ -1,10 +1,19 @@
 #!/usr/bin/env xcrun swift
 //requires Swift 2.0
 //-- parameter: name
-var argument = "time"
-if Process.arguments.count > 1 {
-	argument = Process.arguments[1]
-}
+var argument = "sun"
+#if swift(>=3.0)
+	if CommandLine.arguments.count > 1 {
+		argument = CommandLine.arguments[1]
+	}
+#elseif swift(>=2.0)
+	if Process.arguments.count > 1 {
+		argument = Process.arguments[1]
+	}
+#elseif swift(>=1.0)
+	print("Unsupported version of Swift (<= 2.0) please update to Swift 2.0 or above (Swift 3 supported)!")
+	break
+#endif
 
 import Foundation
 
@@ -26,15 +35,6 @@ let seasonsNames = [ "Winter",  "Spring", "Summer", "Fall" ]
 enum amOrPm: String {
 	case am = "am"
 	case pm = "pm"
-	
-//	func simpleDescription() -> String {
-//		switch self {
-//			case .am:
-//				return "am"
-//			case .pm:
-//				return "pm"
-//		}
-//	}
 }
 
 let gMoonPhaseText = [ " ", "a waxing crescent"
@@ -136,7 +136,7 @@ func convertToAmPmTimeFormat(hours: Int) -> (hour: Int, timeHalf: amOrPm) {
 /// This function is used to return a formated string with the time expressed
 /// in minutes. It uses convertMinutesToHoursMinutes
 func convertMinutesToHoursMinutesDescription(minutes: Int) -> String {
-	let time = convertMinutesToHoursMinutes(minutes)
+	let time = convertMinutesToHoursMinutes(minutes: minutes)
 	let filler = time.minutes < 10 ? "0" : ""
 	return "\(time.hours):\(filler)\(time.minutes)\(time.timeHalf)"
 }
@@ -171,7 +171,7 @@ func getDaysSinceReference(year: Int, dayOfYear: Int) -> Int {
 func constellationForDay(year: Int, dayOfYear: Int) -> (constIndex: Int, daysIntoZodiac: Int) {
 
 	// First get the numbers of days since our reference point
-	let day_offset = getDaysSinceReference(year, dayOfYear: dayOfYear)
+	let day_offset = getDaysSinceReference(year: year, dayOfYear: dayOfYear)
 
 	// we find the current day in a full one-year zodiac cycle
 	// which is 12 times 29 days
@@ -225,7 +225,7 @@ func constellationForDayReport(day_offset: Int) -> (constIndex: Int, daysIntoZod
 func getDayOfWeek(year: Int, dayOfYear: Int) -> Int {
 
 	// reference time is a Merdi, so add its index (6) to the dayOffset
-	let dayOffset = getDaysSinceReference(year, dayOfYear: dayOfYear) + 6
+	let dayOffset = getDaysSinceReference(year: year, dayOfYear: dayOfYear) + 6
 
 	// we return this modulo 7 to convert it to 0...6
 	return dayOffset % 7
@@ -234,7 +234,7 @@ func getDayOfWeek(year: Int, dayOfYear: Int) -> Int {
 func getDayOfWeekReport(year: Int, dayOfYear: Int) -> Int {
 
 	// reference time is a Merdi, so add its index (6) to the dayOffset
-	let dayOffset = getDaysSinceReference(year, dayOfYear: dayOfYear) + 6
+	let dayOffset = getDaysSinceReference(year: year, dayOfYear: dayOfYear) + 6
 
 	// we return this modulo 7 to convert it to 0...6
 	return dayOffset % 7
@@ -249,7 +249,7 @@ func getMoonPhase(year: Int, dayOfYear: Int) -> Int {
 	// we get the days since the reference then substract 10 from that
 	// because that reference day was 10 days into the moon cycle and
 	// we want to reference to day 0 of the moon cycle.
-	let dayOffset = getDaysSinceReference(year, dayOfYear: dayOfYear) - 10
+	let dayOffset = getDaysSinceReference(year: year, dayOfYear: dayOfYear) - 10
 
 	return dayOffset % daysInMoonCycle
 }
@@ -296,7 +296,7 @@ func moonPhaseDescription(moonPhase: Int) -> String {
 
 /// This returns the number of days until the next full moon
 func nextFullMoon(year: Int, dayOfYear: Int) -> Int {
-	let moonPhase = getMoonPhase(year, dayOfYear: dayOfYear)
+	let moonPhase = getMoonPhase(year: year, dayOfYear: dayOfYear)
 
 	var daysToFullMoon = 14 - moonPhase
 
@@ -309,7 +309,7 @@ func nextFullMoon(year: Int, dayOfYear: Int) -> Int {
 /// This returns the number of days until the next full moon
 /// This expects the days since the reference time (as returned by getDaysSinceReference)
 func nextFullMoonReport(dayOffset: Int) -> Int {
-	let moonPhase = getMoonPhaseReport(dayOffset)
+	let moonPhase = getMoonPhaseReport(dayOffset: dayOffset)
 
 	var daysToFullMoon = 14 - moonPhase
 
@@ -365,21 +365,21 @@ func astroData(year: Int, dayOfYear: Int) -> String {
 
 	// To reduce unecessary computation we'll call getDaysSinceReference ounce here
 	// and then call the corresponding methods that expect this parameter
-	let dayOffset = getDaysSinceReference(year, dayOfYear: dayOfYear)
+	let dayOffset = getDaysSinceReference(year: year, dayOfYear: dayOfYear)
 	
 	// Date
-	var description = "Today is " + weekday_names[getDayOfWeek(year, dayOfYear: dayOfYear)] + ", day \(dayOfYear % 90) of " + seasonsNames[getSeason(dayOfYear)] + ", \(year)."
+	var description = "Today is " + weekday_names[getDayOfWeek(year: year, dayOfYear: dayOfYear)] + ", day \(dayOfYear % 90) of " + seasonsNames[getSeason(dayOfYear: dayOfYear)] + ", \(year)."
 
 	// Sun information
-	description += " The sun rises at " + convertMinutesToHoursMinutesDescription(findDaylight(dayOfYear).sunrise) + " and sets at " + convertMinutesToHoursMinutesDescription(findDaylight(dayOfYear).sunset) + "."
+	description += " The sun rises at " + convertMinutesToHoursMinutesDescription(minutes: findDaylight(dayOfYear: dayOfYear).sunrise) + " and sets at " + convertMinutesToHoursMinutesDescription(minutes: findDaylight(dayOfYear: dayOfYear).sunset) + "."
 
 	// Moon information
-	let nextFM = nextFullMoonReport(dayOffset)
+	let nextFM = nextFullMoonReport(dayOffset: dayOffset)
 
-	description += " " + moonPhaseDescription(getMoonPhaseReport(dayOffset)) + ", it is day \(getMoonPhaseReport(dayOffset)) of the moon. The next full moon will be in \(nextFM) day" + ( nextFM > 1 ? "s." : ".")
+	description += " " + moonPhaseDescription(moonPhase: getMoonPhaseReport(dayOffset: dayOffset)) + ", it is day \(getMoonPhaseReport(dayOffset: dayOffset)) of the moon. The next full moon will be in \(nextFM) day" + ( nextFM > 1 ? "s." : ".")
 
 	// Zodiac information
-	let const = constellationForDayReport(dayOffset)
+	let const = constellationForDayReport(day_offset: dayOffset)
 	var nextConst = const.constIndex + 1
 	if nextConst > 11 { nextConst -= 12 }
 	let nextZodiac = g_dayinzodiac - const.daysIntoZodiac
@@ -479,6 +479,9 @@ func daysToDate(year: Int, month: Int, day: Int) -> Int {
 /// This returns the time **after** the reference time in the year
 /// which is used to compute the time-since-the-reference
 func daysIn2013() -> (days: Int, sec: Int) {
+// I'm commenting the computation and just return the result
+// as it's static data. The computation is for my memory!
+//
 //	let daysToRef = daysToDate(2013, month: 03, day: 02)
 //	let secondsInDay = 16 * 60 * 60 + 51 * 60 + 53
 //	let secInADay = 24 * 60 * 60
@@ -525,10 +528,10 @@ func convertRLTime(year: Int, month: Int, day: Int, hour: Int, min: Int, sec: In
 	let referenceYear = daysIn2013()
 	// print("Ref year days: \(referenceYear.days), secs: \(referenceYear.sec)")
 	// now the time up to the date given in the current year
-	let thisYear = daysToDate(year, month: month, day: day)
+	let thisYear = daysToDate(year: year, month: month, day: day)
 	// print("ThisYear (including this full day): \(thisYear)")
 	// finally the years in between the current and the reference year
-	let daysInBetween = daysInYearsBetween(year)
+	let daysInBetween = daysInYearsBetween(year: year)
 	// print("Days in between years: \(daysInBetween)")
 	
 	// add the days to the given date (not counting seconds yet)
@@ -554,14 +557,14 @@ func convertRLTime(year: Int, month: Int, day: Int, hour: Int, min: Int, sec: In
 
 	// convertion factor for CL time vs RL time
 	var clSecs: Double
-	clSecs = convertToClTime(totalSecs)
+	clSecs = convertToClTime(secs: totalSecs)
 
 	// print("CL secs: \(clSecs)")
 
 	// now we're in CL time (secs since reference)
 	// get the number of days since
 	var days = Int(clSecs / 86400)
-	var secs = clSecs % 86400
+	var secs = clSecs.truncatingRemainder(dividingBy: 86400)
 	// now substract the amount corresponding to the reference year
 	days -= 126
 	secs -= 15750
@@ -584,8 +587,8 @@ func convertRLTime(year: Int, month: Int, day: Int, hour: Int, min: Int, sec: In
 		clYear += 1
 	}
 	let clHours = Int( secs / 3600 )
-	let clMin = Int((secs % 3600) / 60 )
-	let clSec = Int((secs % 3600) % 60 )
+	let clMin = Int((secs.truncatingRemainder(dividingBy: 3600)) / 60 )
+	let clSec = Int((secs.truncatingRemainder(dividingBy: 3600)).truncatingRemainder(dividingBy: 60) )
 	
 	return (clYear, days, clHours, clMin, clSec)
 }
@@ -605,19 +608,18 @@ func isDST() -> Bool {
 /// This is the function to call to get the current CL time.
 /// It is a function of the current time and takes DST into account.
 func clTime() ->  (year: Int, dayOfYear: Int, hour: Int, min: Int, sec: Int) {
-	let userCalendar = NSCalendar.currentCalendar()
-	let requestedDateComponents: NSCalendarUnit = [.Year,
-						       .Month,
-						       .Day,
-						       .Hour,
-						       .Minute,
-						       .Second]
-	let today = NSDate()
-	let date = userCalendar.components(requestedDateComponents,
-					   fromDate: today)
+	let userCalendar = Calendar.current
+	let requestedDateComponents: Set<Calendar.Component> = [.year,
+						       .month,
+						       .day,
+						       .hour,
+						       .minute,
+						       .second]
+	let today = Date()
+	let date = userCalendar.dateComponents(requestedDateComponents, from: today)
 //	print(date)
 
-	return convertRLTime(date.year, month: date.month, day: date.day, hour: date.hour, min: date.minute, sec: date.second)
+	return convertRLTime(year: date.year!, month: date.month!, day: date.day!, hour: date.hour!, min: date.minute!, sec: date.second!)
 }
 
 //print(clTime())
@@ -626,7 +628,7 @@ func clTime() ->  (year: Int, dayOfYear: Int, hour: Int, min: Int, sec: Int) {
 /// the user's local time and returns a formated string with the astro data
 func astroDataNow() -> String {
 	let time = clTime()
-	return astroData(time.year, dayOfYear: time.dayOfYear)
+	return astroData(year: time.year, dayOfYear: time.dayOfYear)
 }
 
 //print(astroDataNow())
@@ -635,7 +637,7 @@ func astroDataNow() -> String {
 func clTimeNow() -> String {
 	let time = clTime()
 // Convert to AM/PM
-	let americanTime = convertToAmPmTimeFormat(time.hour)
+	let americanTime = convertToAmPmTimeFormat(hours: time.hour)
 	let fillerM = time.min < 10 ? "0" : ""
 	return "It is \(americanTime.hour):\(fillerM)\(time.min)\(americanTime.timeHalf)"
 }
@@ -643,7 +645,7 @@ func clTimeNow() -> String {
 /// This returns a formated string with the current CL time (just the HH:MM:SS)
 func clCurrentZodiac() -> String {
 	let time = clTime()
-	let const = constellationForDay(time.year, dayOfYear: time.dayOfYear)
+	let const = constellationForDay(year: time.year, dayOfYear: time.dayOfYear)
 	return constellation_short[const.constIndex] + " rises with the Sun today."
 }
 
@@ -652,12 +654,12 @@ func clCurrentZodiac() -> String {
 /// This returns a formated string with all the current CL date and time
 func clTimeNowFull() -> String {
 	let time = clTime()
-	let season = getSeason(time.dayOfYear)
+	let season = getSeason(dayOfYear: time.dayOfYear)
 	let day = time.dayOfYear - season * 90
 // Convert to AM/PM
-	let americanTime = convertToAmPmTimeFormat(time.hour)
+	let americanTime = convertToAmPmTimeFormat(hours: time.hour)
 	let fillerM = time.min < 10 ? "0" : ""
-	return "It is \(americanTime.hour):\(fillerM)\(time.min)\(americanTime.timeHalf) on \(weekday_names[getDayOfWeek(time.year, dayOfYear: time.dayOfYear)]) day \(day) of \(seasonsNames[season]) \(time.year)."
+	return "It is \(americanTime.hour):\(fillerM)\(time.min)\(americanTime.timeHalf) on \(weekday_names[getDayOfWeek(year: time.year, dayOfYear: time.dayOfYear)]) day \(day) of \(seasonsNames[season]) \(time.year)."
 }
 
 //print(clTimeNowFull())
@@ -674,24 +676,18 @@ func convertFromClTime(year: Int, dayOfYear: Int, hour: Int, min: Int, sec: Int)
 //    dateComponents.timeZone = NSTimeZone(name: "America/Montreal")
 //    dateComponents.timeZone = timeZone
 
-	let userCalendar = NSCalendar.currentCalendar()
-	let refDay = userCalendar.dateFromComponents(dateComponents)!
+	let userCalendar = Calendar.current
+	let refDay = userCalendar.date(from: dateComponents as DateComponents)!
 //    print(refDay.description)
 
-	let requestedDateComponents: NSCalendarUnit = [.Year,
-												   .Month,
-												   .Day,
-												   .Hour,
-												   .Minute,
-												   .Second]
-	var date = userCalendar.components(requestedDateComponents,
-													  fromDate: refDay)
-//    date.year
-//    date.month
-//    date.day
-//    date.hour
-//    date.minute
-//    date.second
+//	let requestedDateComponents: Set<Calendar.Component> = [.year,
+//												   .month,
+//												   .day,
+//												   .hour,
+//												   .minute,
+//												   .second]
+//	var date = userCalendar.date(from: requestedDateComponents,
+//													  from: refDay)
 
 	// we start by working in CL secs for reference time
 	// which will be 603/001@12h20:51
@@ -712,20 +708,16 @@ func convertFromClTime(year: Int, dayOfYear: Int, hour: Int, min: Int, sec: Int)
 	let deltaSecs = eventSecs - clSecs
 //    print("deltaSecs = \(deltaSecs)")
 	// Now convert that interval from CL time to RL time
-	let rlSecs = convertToRlTime(deltaSecs)
+	let rlSecs = convertToRlTime(secs: deltaSecs)
 //    print("rlSecs = \(rlSecs)")
-	let futureDate = refDay.dateByAddingTimeInterval(rlSecs)
+	let futureDate = refDay.addingTimeInterval(rlSecs)
 //    print(futureDate)
-	date = userCalendar.components(requestedDateComponents,
-								   fromDate: futureDate)
-//    date.year
-//    date.month
-//    date.day
-//    date.hour
-//    date.minute
-//    date.second
+//	date = userCalendar.date(requestedDateComponents,
+//								   fromDate: futureDate)
 
-	return(date.year, date.month, date.day, date.hour, date.minute, date.second)
+//	let dateComponentsFD = userCalendar.dateComponents([.day, .month, .year, .hour, .minute, .second], from: futureDate)
+//	let date = userCalendar.date(byAdding: dateComponentsFD, to: futureDate)!
+	return(userCalendar.component(.year, from: futureDate), userCalendar.component(.month, from: futureDate), userCalendar.component(.day, from: futureDate), userCalendar.component(.hour, from: futureDate), userCalendar.component(.minute, from: futureDate), userCalendar.component(.second, from: futureDate))
 }
 
 /// This computes the Real Life date and time of the next full moon
@@ -733,7 +725,7 @@ func nextFullMoonInRL() -> String {
 	let time = clTime()
 	var year = time.year
 	let day = time.dayOfYear
-	let daysToFullMoon = nextFullMoon(year, dayOfYear: day)
+	let daysToFullMoon = nextFullMoon(year: year, dayOfYear: day)
 	var dayEvent = day + daysToFullMoon
 	if dayEvent > 360 {
 		dayEvent -= 360
@@ -746,9 +738,9 @@ func nextFullMoonInRL() -> String {
 		timeZone = "[EDT]"
 	}
 	// default to finding noon on that day (used for full moon)
-	let event = convertFromClTime(year, dayOfYear: dayEvent, hour: 12, min: 0, sec: 0)
+	let event = convertFromClTime(year: year, dayOfYear: dayEvent, hour: 12, min: 0, sec: 0)
 	// Convert to AM/PM
-	let americanTime = convertToAmPmTimeFormat(event.hour)
+	let americanTime = convertToAmPmTimeFormat(hours: event.hour)
 	let whichMonth = monthName[event.month - 1]
 	let fillerM = event.min < 10 ? "0" : ""
 	var eventString = "The next FMOCR will be "
@@ -762,7 +754,7 @@ func next2FullMoonInRL() -> String {
 	let time = clTime()
 	var year = time.year
 	let day = time.dayOfYear
-	let daysToFullMoon = nextFullMoon(year, dayOfYear: day)
+	let daysToFullMoon = nextFullMoon(year: year, dayOfYear: day)
 	var dayEvent = day + daysToFullMoon
 	if dayEvent > 360 {
 		dayEvent -= 360
@@ -775,8 +767,8 @@ func next2FullMoonInRL() -> String {
 		timeZone = "[EST]"
 	}
 	// default to finding noon on that day (used for full moon)
-	var event = convertFromClTime(year, dayOfYear: dayEvent, hour: 12, min: 0, sec: 0)
-	var americanTime = convertToAmPmTimeFormat(event.hour)
+	var event = convertFromClTime(year: year, dayOfYear: dayEvent, hour: 12, min: 0, sec: 0)
+	var americanTime = convertToAmPmTimeFormat(hours: event.hour)
 	var whichMonth = monthName[event.month - 1]
 	var fillerM = event.min < 10 ? "0" : ""
 	var eventString = "The next FMOCR will be "
@@ -789,8 +781,8 @@ func next2FullMoonInRL() -> String {
 		year += 1
 	}
 	// default to finding noon on that day (used for full moon)
-	event = convertFromClTime(year, dayOfYear: dayEvent, hour: 12, min: 0, sec: 0)
-	americanTime = convertToAmPmTimeFormat(event.hour)
+	event = convertFromClTime(year: year, dayOfYear: dayEvent, hour: 12, min: 0, sec: 0)
+	americanTime = convertToAmPmTimeFormat(hours: event.hour)
 	whichMonth = monthName[event.month - 1]
 	fillerM = event.min < 10 ? "0" : ""
 	eventString += " and the following will be "
@@ -809,7 +801,7 @@ enum DayPhase {
 }
 
 func dayPhase(dayOfYear: Int) -> DayPhase {
-	let daylight = findDaylight(dayOfYear)  // returns the number of minutes in the day
+	let daylight = findDaylight(dayOfYear: dayOfYear)  // returns the number of minutes in the day
 	let now = clTime()                      // return a tuple with the year, doy, hr, min, sec
 	let nowMinutes = now.hour * 60 + now.min + (now.sec > 0 ? 1 : 0)
 	if nowMinutes < daylight.sunrise {
@@ -823,8 +815,8 @@ func dayPhase(dayOfYear: Int) -> DayPhase {
 	
 func nextSunEvent() -> String {
 	let now = clTime()                          // returns a tuple with the year, doy, hr, min, sec
-	let dPhase = dayPhase(now.dayOfYear)        // returns which part of the day we're in at the moment
-	let daylight = findDaylight(now.dayOfYear)  // returns the number of minutes in the day for sunrise and sunset
+	let dPhase = dayPhase(dayOfYear: now.dayOfYear)        // returns which part of the day we're in at the moment
+	let daylight = findDaylight(dayOfYear: now.dayOfYear)  // returns the number of minutes in the day for sunrise and sunset
 	var timeZone = ""
 	if isDST() {
 		timeZone = "[IRL, EDT]"
@@ -835,26 +827,26 @@ func nextSunEvent() -> String {
 	switch dPhase {
 	case .BeforeSunrise:
 		// the next event will be today's sunrise
-		let timeOfSunrise = convertMinutesToHoursMinutes(daylight.sunrise)
+		let timeOfSunrise = convertMinutesToHoursMinutes(minutes: daylight.sunrise)
 		var hour = (timeOfSunrise.timeHalf == .am ? timeOfSunrise.hours : timeOfSunrise.hours + 12)
-		var event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunrise.minutes, sec: 0)
-		var americanTime = convertToAmPmTimeFormat(event.hour)
+		var event = convertFromClTime(year: now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunrise.minutes, sec: 0)
+		var americanTime = convertToAmPmTimeFormat(hours: event.hour)
 		var fillerM = ( event.min < 10 ? "0" : "" )
 		let message = "Sunrise is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf)"
 		// Now following event will be today's sunset
-		let timeOfSunset = convertMinutesToHoursMinutes(daylight.sunset)
+		let timeOfSunset = convertMinutesToHoursMinutes(minutes: daylight.sunset)
 		hour = (timeOfSunset.timeHalf == .am ? timeOfSunset.hours : timeOfSunset.hours + 12)
-		event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunset.minutes, sec: 0)
-		americanTime = convertToAmPmTimeFormat(event.hour)
+		event = convertFromClTime(year: now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunset.minutes, sec: 0)
+		americanTime = convertToAmPmTimeFormat(hours: event.hour)
 		fillerM = ( event.min < 10 ? "0" : "" )
 		return message + " and sunset is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
 
 	case .BeforeSunset:
 		// the next event will be today's sunset
-		let timeOfSunset = convertMinutesToHoursMinutes(daylight.sunset)
+		let timeOfSunset = convertMinutesToHoursMinutes(minutes: daylight.sunset)
 		var hour = (timeOfSunset.timeHalf == .am ? timeOfSunset.hours : timeOfSunset.hours + 12)
-		var event = convertFromClTime(now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunset.minutes, sec: 0)
-		var americanTime = convertToAmPmTimeFormat(event.hour)
+		var event = convertFromClTime(year: now.year, dayOfYear: now.dayOfYear, hour: hour, min: timeOfSunset.minutes, sec: 0)
+		var americanTime = convertToAmPmTimeFormat(hours: event.hour)
 		var fillerM = ( event.min < 10 ? "0" : "" )
 		let message = "Sunset is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf)"
 
@@ -866,11 +858,11 @@ func nextSunEvent() -> String {
 			day = 1
 			year += 1
 		}
-		let daylightTomorrow = findDaylight(day)  // find sunrise tomorrow
-		let timeOfSunrise = convertMinutesToHoursMinutes(daylightTomorrow.sunrise)
+		let daylightTomorrow = findDaylight(dayOfYear: day)  // find sunrise tomorrow
+		let timeOfSunrise = convertMinutesToHoursMinutes(minutes: daylightTomorrow.sunrise)
 		hour = (timeOfSunrise.timeHalf == .am ? timeOfSunrise.hours : timeOfSunrise.hours + 12)
-		event = convertFromClTime(year, dayOfYear: day, hour: hour, min: timeOfSunrise.minutes, sec: 0)
-		americanTime = convertToAmPmTimeFormat(event.hour)
+		event = convertFromClTime(year: year, dayOfYear: day, hour: hour, min: timeOfSunrise.minutes, sec: 0)
+		americanTime = convertToAmPmTimeFormat(hours: event.hour)
 		fillerM = ( event.min < 10 ? "0" : "" )
 		return message + " and sunrise (tomorrow) is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
 	case .AfterSunset:
@@ -882,19 +874,19 @@ func nextSunEvent() -> String {
 			day = 1
 			year += 1
 		}
-		let daylightTomorrow = findDaylight(day)  // find sunrise tomorrow
-		let timeOfSunrise = convertMinutesToHoursMinutes(daylightTomorrow.sunrise)
+		let daylightTomorrow = findDaylight(dayOfYear: day)  // find sunrise tomorrow
+		let timeOfSunrise = convertMinutesToHoursMinutes(minutes: daylightTomorrow.sunrise)
 		var hour = (timeOfSunrise.timeHalf == .am ? timeOfSunrise.hours : timeOfSunrise.hours + 12)
-		var event = convertFromClTime(year, dayOfYear: day, hour: hour, min: timeOfSunrise.minutes, sec: 0)
-		var americanTime = convertToAmPmTimeFormat(event.hour)
+		var event = convertFromClTime(year: year, dayOfYear: day, hour: hour, min: timeOfSunrise.minutes, sec: 0)
+		var americanTime = convertToAmPmTimeFormat(hours: event.hour)
 		var fillerM = ( event.min < 10 ? "0" : "" )
 		let message = "Sunrise (next) is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf)"
 
 		// the following event will be tomorrows's sunset
-		let timeOfSunset = convertMinutesToHoursMinutes(daylightTomorrow.sunset)
+		let timeOfSunset = convertMinutesToHoursMinutes(minutes: daylightTomorrow.sunset)
 		hour = (timeOfSunset.timeHalf == .am ? timeOfSunset.hours : timeOfSunset.hours + 12)
-		event = convertFromClTime(year, dayOfYear: day, hour: hour, min: timeOfSunset.minutes, sec: 0)
-		americanTime = convertToAmPmTimeFormat(event.hour)
+		event = convertFromClTime(year: year, dayOfYear: day, hour: hour, min: timeOfSunset.minutes, sec: 0)
+		americanTime = convertToAmPmTimeFormat(hours: event.hour)
 		fillerM = ( event.min < 10 ? "0" : "" )
 		return message + " and sunset is at \(americanTime.hour):\(fillerM)\(event.min)\(americanTime.timeHalf) \(timeZone)"
 	}
@@ -966,7 +958,7 @@ func normaliseZodiacIndex(index: Int) -> Int {
 // of rising zodiacs, other have more complicated steps patterns)
 func sayMZMPath(race: String) -> String {
 	let time = clTime()
-	let const = constellationForDay(time.year, dayOfYear: time.dayOfYear).constIndex
+	let const = constellationForDay(year: time.year, dayOfYear: time.dayOfYear).constIndex
 	var raceIndex = 0 // default to human
 	switch race {
 		case "human":
@@ -988,10 +980,10 @@ func sayMZMPath(race: String) -> String {
 	}
 	var path = [Int]()
 	// get the starting zodiac sign for that race's path
-	path.append(normaliseZodiacIndex(const - start[raceIndex])) 
+	path.append(normaliseZodiacIndex(index: const - start[raceIndex])) 
 	// now complete the path
 	for i in 1...11 {
-		path.append(normaliseZodiacIndex(path[i-1] + step[raceIndex][i]))
+		path.append(normaliseZodiacIndex(index: path[i-1] + step[raceIndex][i]))
 	}
 	var pathString = "Path for \(race) is: "
 	for i in 0...11 {
@@ -1022,19 +1014,19 @@ switch argument {
 	case "sun":
 		expension = nextSunEvent()
 	case "mzm_human":
-		expension = sayMZMPath("human")
+		expension = sayMZMPath(race: "human")
 	case "mzm_dwarf":
-		expension = sayMZMPath("dwarf")
+		expension = sayMZMPath(race: "dwarf")
 	case "mzm_thoom":
-		expension = sayMZMPath("thoom")
+		expension = sayMZMPath(race: "thoom")
 	case "mzm_zo":
-		expension = sayMZMPath("zo")
+		expension = sayMZMPath(race: "zo")
 	case "mzm_fen":
-		expension = sayMZMPath("fen")
+		expension = sayMZMPath(race: "fen")
 	case "mzm_sylvan":
-		expension = sayMZMPath("sylvan")
+		expension = sayMZMPath(race: "sylvan")
 	case "mzm_halfling":
-		expension = sayMZMPath("halfling")
+		expension = sayMZMPath(race: "halfling")
 	default:
 		expension = astroDataNow()
 }
