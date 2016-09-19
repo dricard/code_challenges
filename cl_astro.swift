@@ -1,7 +1,7 @@
 #!/usr/bin/env xcrun swift
 //requires Swift 2.0
 //-- parameter: name
-var argument = "sun"
+var argument = "help"
 #if swift(>=3.0)
 	if CommandLine.arguments.count > 1 {
 		argument = CommandLine.arguments[1]
@@ -997,6 +997,10 @@ func sayMZMPath(race: String) -> String {
 	return pathString
 }
 
+func help() -> String {
+	return "Arguments are: \ntime: current CL time\ndate: current cl date and time\nastro: most astronomical data\nmoon: next FMOCR time (OOC)\n2moon: next two FMOCR times (OOC)\nzd: current rising zodiac\nsun: next two sunrise/sunset events in OOC time\nmzXX: where XX are the two first letters of the race - path through MZM"
+}
+
 var expension: String = "placeholder \(argument)"
 switch argument {
 	case "time":
@@ -1027,6 +1031,8 @@ switch argument {
 		expension = sayMZMPath(race: "sylvan")
 	case "mzm_halfling":
 		expension = sayMZMPath(race: "halfling")
+	case "help":
+		expension = help()
 	default:
 		expension = astroDataNow()
 }
